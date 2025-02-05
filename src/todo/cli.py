@@ -10,10 +10,13 @@ from .service import (
     get_task,
     update_task,
     delete_task,
-    list_tasks,
+    list_tasks
+)
+
+from .model import (
     CreateTask,
     UpdateTask,
-    ListTasks,
+    ListTasks
 )
 
 def format_task_for_table(task: dict[str, Any]) -> list[Any]:
@@ -54,40 +57,12 @@ def format_tasks_table(tasks: Sequence[dict[str, Any]]) -> str:
         stralign='left'
     )
 
-def format_task_output(task_data: dict[str, Any]) -> str:
-    """Format task data for terminal output"""
-    # Format dates for better readability
-    for field in ['created_at', 'completed_at']:
-        if task_data.get(field):
-            dt = datetime.fromisoformat(task_data[field])
-            task_data[field] = dt.strftime('%Y-%m-%d %H:%M:%S')
-    
-    # Format tags list
-    if task_data.get('tags'):
-        task_data['tags'] = ', '.join(task_data['tags'])
-    
-    # Create formatted output
-    lines = [
-        f"ID: {task_data['id']}",
-        f"Name: {task_data['name']}",
-        f"Status: {task_data['status']}",
-    ]
-    
-    # Add optional fields if present
-    if task_data.get('desc'):
-        lines.append(f"Description: {task_data['desc']}")
-    if task_data.get('tags'):
-        lines.append(f"Tags: {task_data['tags']}")
-    if task_data.get('due_date'):
-        lines.append(f"Due Date: {task_data['due_date']}")
-    if task_data.get('priority'):
-        lines.append(f"Priority: {task_data['priority']}")
-    if task_data.get('created_at'):
-        lines.append(f"Created: {task_data['created_at']}")
-    if task_data.get('completed_at'):
-        lines.append(f"Completed: {task_data['completed_at']}")
-    
-    return '\n'.join(lines)
+def parse_task_ids(ids_str: str) -> list[int]:
+    """Parse comma-separated task IDs string into list of integers"""
+    try:
+        return [int(id.strip()) for id in ids_str.split(',') if id.strip()]
+    except ValueError:
+        raise click.BadParameter('Task IDs must be comma-separated integers')
 
 def parse_tags(tags_str: str | None) -> list[str] | None:
     """Parse comma-separated tags string into list"""
@@ -180,82 +155,143 @@ def add(name: str, desc: Optional[str], tags: Optional[str], due: Optional[str],
     ))
     click.echo(f"Task created successfully with ID: {task.id}")
     click.echo("\nTask details:")
-    click.echo(format_task_output(task.model_dump()))
+    click.echo(format_tasks_table([task.model_dump()]))
 
 @cli.command()
-@click.argument('id', type=int)
-def get(id: int):
-    """Get task details"""
-    task = get_task(id)
-    if not task:
-        click.echo(f"Task with ID {id} not found", err=True)
+@click.argument('ids')
+def get(ids: str):
+    """Get details for one or more tasks (comma-separated IDs)"""
+    task_ids = parse_task_ids(ids)
+    successes = []
+    failures = []
+    
+    for task_id in task_ids:
+        task = get_task(task_id)
+        if task:
+            successes.append(task)
+        else:
+            failures.append((task_id, "Task not found"))
+    
+    if successes:
+        click.echo(f"Found {len(successes)} task(s):\n")
+        click.echo(format_tasks_table([task.model_dump() for task in successes]))
+    
+    if failures:
+        click.echo("\nFailed to get the following tasks:", err=True)
+        for task_id, error in failures:
+            click.echo(f"Task {task_id}: {error}", err=True)
+        
+    if failures and not successes:
         sys.exit(1)
-    click.echo(format_task_output(task.model_dump()))
 
 @cli.command()
-@click.argument('id', type=int)
+@click.argument('ids')
 @click.option('-n', '--name', help='New task name')
 @click.option('-d', '--desc', help='New task description')
 @click.option('-t', '--tags', help='New comma-separated tags')
 @click.option('-u', '--due', help='New due date (YYYY-MM-DD or today/tomorrow/week=Sunday/month=end-of-month/quarter=end-of-quarter/year=end-of-year)')
 @click.option('-p', '--priority', type=click.Choice(['low', 'medium', 'high']), help='New task priority')
 @click.option('-s', '--status', type=click.Choice(['active', 'completed', 'archived']), help='New task status')
-def update(id: int, name: Optional[str], desc: Optional[str], tags: Optional[str], 
+def update(ids: str, name: Optional[str], desc: Optional[str], tags: Optional[str], 
           due: Optional[str], priority: Optional[str], status: Optional[str]):
-    """Update a task"""
-    update_data = {'id': id}
+    """Update one or more tasks (comma-separated IDs)"""
+    task_ids = parse_task_ids(ids)
+    successes = []
+    failures = []
     
+    base_update_data = {}
     # Only include provided fields
     if name is not None:
-        update_data['name'] = name
+        base_update_data['name'] = name
     if desc is not None:
-        update_data['desc'] = desc
+        base_update_data['desc'] = desc
     if tags is not None:
-        update_data['tags'] = parse_tags(tags)
+        base_update_data['tags'] = parse_tags(tags)
     if due is not None:
-        update_data['due_date'] = parse_due_date(due)
+        base_update_data['due_date'] = parse_due_date(due)
     if priority is not None:
-        update_data['priority'] = priority
+        base_update_data['priority'] = priority
     if status is not None:
-        update_data['status'] = status
+        base_update_data['status'] = status
     
-    try:
-        task = update_task(UpdateTask(**update_data))
-        click.echo(f"Task {task.id} updated successfully")
-        click.echo("\nUpdated task details:")
-        click.echo(format_task_output(task.model_dump()))
-    except ValueError as e:
-        click.echo(f"Error: {str(e)}", err=True)
+    for task_id in task_ids:
+        try:
+            update_data = {'id': task_id, **base_update_data}
+            task = update_task(UpdateTask(**update_data))
+            successes.append(task)
+        except ValueError as e:
+            failures.append((task_id, str(e)))
+    
+    # Print results
+    if successes:
+        click.echo(f"Successfully updated {len(successes)} task(s):")
+        click.echo(format_tasks_table([task.model_dump() for task in successes]))
+    
+    if failures:
+        click.echo("\nFailed to update the following tasks:", err=True)
+        for task_id, error in failures:
+            click.echo(f"Task {task_id}: {error}", err=True)
+        
+    if failures and not successes:
         sys.exit(1)
 
 @cli.command()
-@click.argument('id', type=int)
-def finish(id: int):
-    """Mark a task as completed (shortcut for: update --status completed)"""
-    try:
-        task = update_task(UpdateTask(id=id, status='completed'))
-        click.echo(f"Task {task.id} marked as completed")
-        click.echo("\nUpdated task details:")
-        click.echo(format_task_output(task.model_dump()))
-    except ValueError as e:
-        click.echo(f"Error: {str(e)}", err=True)
+@click.argument('ids')
+def finish(ids: str):
+    """Mark one or more tasks as completed (shortcut for: update --status completed)"""
+    task_ids = parse_task_ids(ids)
+    successes = []
+    failures = []
+    
+    for task_id in task_ids:
+        try:
+            task = update_task(UpdateTask(id=task_id, status='completed'))
+            successes.append(task)
+        except ValueError as e:
+            failures.append((task_id, str(e)))
+    
+    if successes:
+        click.echo(f"Successfully completed {len(successes)} task(s):")
+        click.echo(format_tasks_table([task.model_dump() for task in successes]))
+    
+    if failures:
+        click.echo("\nFailed to complete the following tasks:", err=True)
+        for task_id, error in failures:
+            click.echo(f"Task {task_id}: {error}", err=True)
+        
+    if failures and not successes:
         sys.exit(1)
 
 @cli.command()
-@click.argument('id', type=int)
-def delete(id: int):
-    """Delete a task"""
-    if delete_task(id):
-        click.echo(f"Task {id} deleted successfully")
-    else:
-        click.echo(f"Task with ID {id} not found", err=True)
+@click.argument('ids')
+def delete(ids: str):
+    """Delete one or more tasks (comma-separated IDs)"""
+    task_ids = parse_task_ids(ids)
+    successes = []
+    failures = []
+    
+    for task_id in task_ids:
+        if delete_task(task_id):
+            successes.append(task_id)
+        else:
+            failures.append((task_id, "Task not found"))
+    
+    if successes:
+        click.echo(f"Successfully deleted {len(successes)} task(s): {', '.join(map(str, successes))}")
+    
+    if failures:
+        click.echo("\nFailed to delete the following tasks:", err=True)
+        for task_id, error in failures:
+            click.echo(f"Task {task_id}: {error}", err=True)
+        
+    if failures and not successes:
         sys.exit(1)
 
 @cli.command()
 @click.option('-k', '--keyword', help='Search keyword')
 @click.option('-t', '--tags', help='Filter by comma-separated tags')
 @click.option('-p', '--priority', type=click.Choice(['low', 'medium', 'high']), help='Filter by priority')
-@click.option('-s', '--status', type=click.Choice(['active', 'completed', 'archived']), help='Filter by status')
+@click.option('-s', '--status', type=click.Choice(['all', 'active', 'completed', 'archived']), help='Filter by status (default: active)')
 @click.option('-r', '--range', type=click.Choice(['all', 'today', 'tomorrow', 'day', 'week', 'month', 'quarter', 'year']), 
           help='Filter by due date range (today=due today/tomorrow=due tomorrow/week=due after today until Sunday/'
                'month=due after this week until month end/quarter=due after this month until quarter end/'

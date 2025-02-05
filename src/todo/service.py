@@ -1,54 +1,9 @@
 import json
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Sequence, Literal
-from pydantic import BaseModel
 
 from .config import DATA_FILE
-
-# Task model and related schemas
-class Task(BaseModel):
-    id: int
-    name: str
-    desc: str | None = None
-    tags: list[str] | None = None
-    due_date: str | None = None  # YYYY-MM-DD format
-    priority: str | None = None  # low/medium/high
-    status: str  # active/completed/archived
-    created_at: str  # ISO8601 timestamp
-    completed_at: str | None = None  # ISO8601 timestamp
-
-class CreateTask(BaseModel):
-    name: str
-    desc: str | None = None
-    tags: list[str] | None = None
-    due_date: str | None = None
-    priority: str | None = None
-
-class UpdateTask(BaseModel):
-    id: int
-    name: str | None = None
-    desc: str | None = None
-    tags: list[str] | None = None
-    due_date: str | None = None
-    priority: str | None = None
-    status: str | None = None
-
-class DeleteTask(BaseModel):
-    id: int
-
-class GetTask(BaseModel):
-    id: int
-
-class ListTasks(BaseModel):
-    keyword: str | None = None
-    tags: list[str] | None = None
-    priority: str | None = None
-    status: str | None = None
-    range: Literal["all", "today", "tomorrow", "day", "week", "month", "quarter", "year"] | None = None
-    orderby: Literal["due-date", "priority", "id", "created-at"] = "due-date"  # Default to priority
-    order: Literal["asc", "desc"] = "asc"  # Default to ascending
-    limit: int | None = 10  # Default to 10 tasks
+from .model import Task, CreateTask, UpdateTask, ListTasks
 
 def load_tasks() -> list[Task]:
     """Load tasks from storage"""
@@ -145,7 +100,8 @@ def list_tasks(filters: ListTasks) -> list[Task]:
     
     # Apply basic filters
     status = filters.status or "active"  # Default to active if not specified
-    tasks = [t for t in tasks if t.status == status]
+    if status != "all":  # Skip status filtering if "all" is specified
+        tasks = [t for t in tasks if t.status == status]
     if filters.priority:
         tasks = [t for t in tasks if t.priority == filters.priority]
     if filters.tags:

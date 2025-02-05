@@ -11,12 +11,15 @@ from .service import (
     get_task,
     update_task,
     delete_task,
-    list_tasks,
+    list_tasks
+)
+
+from .model import (
     CreateTask,
     GetTask,
     UpdateTask,
     DeleteTask,
-    ListTasks,
+    ListTasks
 )
 
 class TodoTools(str, Enum):
