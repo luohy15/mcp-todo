@@ -5,13 +5,14 @@ import platform
 def get_default_config():
     """Get default configuration"""
     return {
-        "data_file": "~/.local/share/todo/tasks.jsonl"
+        "data_file": "~/.local/share/todo/tasks.jsonl",
+        "config_file": "~/.config/todo/config.toml"
     }
 
 def load_config():
     """Load configuration from TOML file or create with defaults if it doesn't exist"""
     # toml config file
-    CONFIG_FILE = os.path.expanduser("~/.config/todo/config.toml")
+    CONFIG_FILE = os.path.expanduser(get_default_config()["config_file"])
     # ensure the directory exists
     os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
 

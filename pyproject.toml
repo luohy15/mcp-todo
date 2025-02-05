@@ -1,7 +1,7 @@
 [project]
-name = "mcp-server-todo"
+name = "todo"
 version = "0.0.1"
-description = "A Model Context Protocol server providing tools to read, search, and manipulate todo repositories programmatically via LLMs"
+description = "A command-line todo application with MCP server capabilities for LLM integration"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = ["todo", "mcp", "llm", "automation"]
@@ -23,8 +23,8 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-server-todo = "mcp_server_todo.__main__:main"
-todo = "mcp_server_todo.cli:main"
+todo = "todo.cli:main"
+todo-mcp = "todo.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -38,3 +38,10 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
+
+[[tool.uv.index]]
+# Optional name for the index.
+name = "tuna"
+# Required URL for the index.
+url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
+default = true

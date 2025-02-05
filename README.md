@@ -1,91 +1,72 @@
-# Todo MCP Server
+# Todo
 
-A Model Context Protocol server for managing tasks and todos. This server provides tools to create, read, update, delete and list todo items.
+A command-line todo application with MCP server capabilities for LLM integration.
 
-## Tools
+## Features
 
-1. `task_create`
-   - Create a new task
-   - Input:
-     - `name` (string): Task name
-     - `desc` (string, optional): Task description
-     - `tags` (string[], optional): Array of tags
-     - `due_date` (string, optional): Due date in YYYY-MM-DD format
-     - `priority` (string, optional): Task priority (low/medium/high)
-
-2. `task_get`
-   - Get a task by ID
-   - Input:
-     - `id` (number): Task ID
-
-3. `task_update`
-   - Update an existing task
-   - Input:
-     - `id` (number): Task ID
-     - `name` (string, optional): New task name
-     - `desc` (string, optional): New description
-     - `tags` (string[], optional): New tags
-     - `due_date` (string, optional): New due date
-     - `priority` (string, optional): New priority
-     - `status` (string, optional): New status (active/completed/archived)
-
-4. `task_delete`
-   - Delete a task
-   - Input:
-     - `id` (number): Task ID
-
-5. `task_list`
-   - List tasks with optional filters
-   - Input:
-     - `keyword` (string, optional): Search keyword
-     - `tags` (string[], optional): Filter by tags
-     - `priority` (string, optional): Filter by priority
-     - `status` (string, optional): Filter by status
-
-## Configuration
-
-### Environment Variables
-
-- `TODO_FILE_PATH`: Path to the JSONL file for storing tasks. If not set, defaults to "/Users/mac/Nutstore Files/luohy15-data/todo.jsonl"
-
-### Usage with Claude Desktop
-
-Add this to your `claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "todo": {
-      "command": "/path/to/venv/bin/python",
-      "args": ["-m", "mcp_server_todo"],
-      "env": {
-        "TODO_FILE_PATH": "/path/to/your/todo.jsonl"
-      }
-    }
-  }
-}
-```
+- Command-line interface for managing tasks
+- Rich filtering and sorting options
+- Support for tags, priorities, and due dates
+- MCP server integration for LLM-based task management
+- JSONL-based storage for easy data manipulation
 
 ## Installation
 
-1. Create a Python virtual environment:
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # On Unix/macOS
+pip install .
 ```
 
-2. Install dependencies:
+## Usage
+
+### CLI Mode
+
 ```bash
-pip install -r requirements.txt
+# Add a new task
+todo add "Complete project documentation" -d "Write comprehensive docs" -t "work,docs" -p high -u tomorrow
+
+# List tasks
+todo list                    # List all active tasks
+todo list -s completed      # List completed tasks
+todo list -r today          # List tasks due today
+todo list -t work,urgent    # List tasks with specific tags
+todo list -p high           # List high priority tasks
+
+# Update a task
+todo update 1 -n "New name" -s completed
+
+# Quick complete a task
+todo finish 1
+
+# Delete a task
+todo delete 1
+
+# Get task details
+todo get 1
 ```
 
-## Development
+### MCP Server Mode
 
-Run the server directly:
+The package also provides an MCP server for LLM integration:
+
 ```bash
-python -m mcp_server_todo
+todo-mcp
+```
+
+This starts the MCP server which provides tools for:
+- Creating tasks
+- Reading task details
+- Updating tasks
+- Deleting tasks
+- Listing tasks with filters
+
+## Configuration
+
+Configuration file is stored at `~/.config/todo/config.toml`:
+
+```toml
+data_file = "~/.local/share/todo/tasks.jsonl"
 ```
 
 ## License
 
-This MCP server is licensed under the MIT License. See the LICENSE file for details.
+MIT

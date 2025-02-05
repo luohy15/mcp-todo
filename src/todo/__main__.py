@@ -1,14 +1,17 @@
-import asyncio
 import sys
-from pathlib import Path
+import asyncio
 
 from .cli import main as cli_main
-from mcp_server_todo import main
+from . import main as mcp_main
 
-if __name__ == "__main__":
+def main():
+    """Main entry point for the MCP server"""
     if len(sys.argv) > 1:
         # If arguments are provided, run in CLI mode
         cli_main()
     else:
         # Otherwise run as MCP server
-        main()
+        mcp_main()
+
+if __name__ == "__main__":
+    main()

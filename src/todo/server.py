@@ -26,7 +26,7 @@ class TodoTools(str, Enum):
     DELETE = "task_delete"
     LIST = "task_list"
 
-async def serve(db_path: Path | None = None) -> None:
+async def serve() -> None:
     # Configure logging
     logging.basicConfig(
         level=logging.INFO,
