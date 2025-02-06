@@ -1,7 +1,14 @@
+"""Todo - A command-line todo application with MCP server capabilities"""
+
+__version__ = "0.0.1"
+
 import logging
 import json
+import sys
+import platform
 from pathlib import Path
 from enum import Enum
+import click
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
@@ -123,5 +130,32 @@ async def serve() -> None:
             )]
 
     options = server.create_initialization_options()
+    # Ensure UTF-8 encoding on Windows
+    if platform.system() == "Windows":
+        import msvcrt
+        import os
+        msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
+        msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
+        sys.stdin = open(sys.stdin.fileno(), mode='r', encoding='utf-8', buffering=1)
+        sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
+
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, options, raise_exceptions=True)
+
+@click.command()
+@click.option("-v", "--verbose", count=True)
+def main(verbose: bool) -> None:
+    """MCP Todo Server - Todo functionality for MCP"""
+    import asyncio
+
+    logging_level = logging.WARN
+    if verbose == 1:
+        logging_level = logging.INFO
+    elif verbose >= 2:
+        logging_level = logging.DEBUG
+
+    logging.basicConfig(level=logging_level, stream=sys.stderr)
+    asyncio.run(serve())
+
+if __name__ == "__main__":
+    main()

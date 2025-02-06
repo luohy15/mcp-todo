@@ -1,6 +1,6 @@
 [project]
-name = "todo"
-version = "0.0.1"
+name = "mcp-todo"
+version = "0.0.2"
 description = "A command-line todo application with MCP server capabilities for LLM integration"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -23,21 +23,11 @@ dependencies = [
 ]
 
 [project.scripts]
+mcp-todo = "todo.server:main"
 todo = "todo.cli:main"
-todo-mcp = "todo.__main__:main"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
 
 [tool.uv]
 dev-dependencies = ["pyright>=1.1.389", "ruff>=0.7.3", "pytest>=8.0.0"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
 
 [[tool.uv.index]]
 # Optional name for the index.

@@ -46,6 +46,7 @@ def create_task(data: CreateTask) -> Task:
         due_date=data.due_date,
         priority=data.priority,
         status="active",
+        progress=data.progress,
         created_at=timestamp_iso8601()
     )
     tasks = load_tasks()
@@ -81,6 +82,8 @@ def update_task(data: UpdateTask) -> Task:
         task.status = data.status
         if data.status == "completed" and old_status != "completed":
             task.completed_at = timestamp_iso8601()
+    if data.progress is not None:
+        task.progress = data.progress
     
     save_tasks(tasks)
     return task
@@ -102,8 +105,10 @@ def list_tasks(filters: ListTasks) -> list[Task]:
     status = filters.status or "active"  # Default to active if not specified
     if status != "all":  # Skip status filtering if "all" is specified
         tasks = [t for t in tasks if t.status == status]
-    if filters.priority:
-        tasks = [t for t in tasks if t.priority == filters.priority]
+    # Convert string "none" to None for priority filter
+    priority = None if filters.priority == "none" else filters.priority
+    if priority:
+        tasks = [t for t in tasks if t.priority == priority]
     if filters.tags:
         tasks = [t for t in tasks if t.tags and any(tag in t.tags for tag in filters.tags)]
     if filters.keyword:

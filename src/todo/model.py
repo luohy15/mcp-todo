@@ -1,6 +1,9 @@
 from typing import Sequence, Literal
 from pydantic import BaseModel
 
+TaskPriority = Literal["low", "medium", "high", "none"]
+TaskStatus = Literal["active", "completed", "archived", "all", "none"]
+
 # Task model and related schemas
 class Task(BaseModel):
     id: int
@@ -8,8 +11,9 @@ class Task(BaseModel):
     desc: str | None = None
     tags: list[str] | None = None
     due_date: str | None = None  # YYYY-MM-DD format
-    priority: str | None = None  # low/medium/high
-    status: str  # active/completed/archived
+    priority: TaskPriority | None = None
+    status: TaskStatus | None = None
+    progress: str | None = None
     created_at: str  # ISO8601 timestamp
     completed_at: str | None = None  # ISO8601 timestamp
 
@@ -18,7 +22,9 @@ class CreateTask(BaseModel):
     desc: str | None = None
     tags: list[str] | None = None
     due_date: str | None = None
-    priority: str | None = None
+    priority: TaskPriority | None = None
+    status: TaskStatus | None = "active"
+    progress: str | None = None
 
 class UpdateTask(BaseModel):
     id: int
@@ -26,8 +32,9 @@ class UpdateTask(BaseModel):
     desc: str | None = None
     tags: list[str] | None = None
     due_date: str | None = None
-    priority: str | None = None
-    status: str | None = None
+    priority: TaskPriority | None = None
+    status: TaskStatus | None = None
+    progress: str | None = None
 
 class DeleteTask(BaseModel):
     id: int
@@ -38,9 +45,9 @@ class GetTask(BaseModel):
 class ListTasks(BaseModel):
     keyword: str | None = None
     tags: list[str] | None = None
-    priority: str | None = None
-    status: str | None = None
+    priority: TaskPriority | None = None
+    status: TaskStatus | None = None
     range: Literal["all", "today", "tomorrow", "day", "week", "month", "quarter", "year"] | None = None
-    orderby: Literal["due-date", "priority", "id", "created-at"] = "due-date"  # Default to priority
+    orderby: Literal["due-date", "priority", "id", "created-at"] = "due-date"  # Default to due-date
     order: Literal["asc", "desc"] = "asc"  # Default to ascending
     limit: int | None = 10  # Default to 10 tasks

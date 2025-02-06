@@ -33,9 +33,10 @@ def format_task_for_table(task: dict[str, Any]) -> list[Any]:
         task['name'],
         task.get('desc') or '',
         task['status'],
+        task.get('progress') or '',
+        task.get('due_date') or '',
         task.get('priority') or '',
         tags,
-        task.get('due_date') or '',
         created_at,
         completed_at
     ]
@@ -45,14 +46,14 @@ def format_tasks_table(tasks: Sequence[dict[str, Any]]) -> str:
     if not tasks:
         return "No tasks found"
     
-    headers = ['ID', 'Name', 'Description', 'Status', 'Priority', 'Tags', 'Due Date', 'Created', 'Completed']
+    headers = ['ID', 'Name', 'Description', 'Status', 'Progress', 'Due Date', 'Priority', 'Tags', 'Created', 'Completed']
     rows = [format_task_for_table(task) for task in tasks]
     
     return tabulate(
         rows,
         headers=headers,
         tablefmt='simple',
-        maxcolwidths=[6, 20, 30, 15, 10, 15, 15, 15, 15],
+        maxcolwidths=[6, 20, 30, 15, 15, 15, 15, 10, 15, 15],
         numalign='left',
         stralign='left'
     )
@@ -144,14 +145,16 @@ def cli():
 @click.option('-t', '--tags', help='Comma-separated tags')
 @click.option('-u', '--due', help='Due date (YYYY-MM-DD or today/tomorrow/week=Sunday/month=end-of-month/quarter=end-of-quarter/year=end-of-year)')
 @click.option('-p', '--priority', type=click.Choice(['low', 'medium', 'high']), help='Task priority')
-def add(name: str, desc: Optional[str], tags: Optional[str], due: Optional[str], priority: Optional[str]):
+@click.option('-g', '--progress', help='Task progress')
+def add(name: str, desc: Optional[str], tags: Optional[str], due: Optional[str], priority: Optional[str], progress: Optional[str]):
     """Add a new task"""
     task = create_task(CreateTask(
         name=name,
         desc=desc,
         tags=parse_tags(tags),
         due_date=parse_due_date(due),
-        priority=priority
+        priority=priority,
+        progress=progress
     ))
     click.echo(f"Task created successfully with ID: {task.id}")
     click.echo("\nTask details:")
@@ -192,8 +195,9 @@ def get(ids: str):
 @click.option('-u', '--due', help='New due date (YYYY-MM-DD or today/tomorrow/week=Sunday/month=end-of-month/quarter=end-of-quarter/year=end-of-year)')
 @click.option('-p', '--priority', type=click.Choice(['low', 'medium', 'high']), help='New task priority')
 @click.option('-s', '--status', type=click.Choice(['active', 'completed', 'archived']), help='New task status')
+@click.option('-g', '--progress', help='New task progress')
 def update(ids: str, name: Optional[str], desc: Optional[str], tags: Optional[str], 
-          due: Optional[str], priority: Optional[str], status: Optional[str]):
+          due: Optional[str], priority: Optional[str], status: Optional[str], progress: Optional[str]):
     """Update one or more tasks (comma-separated IDs)"""
     task_ids = parse_task_ids(ids)
     successes = []
@@ -213,6 +217,8 @@ def update(ids: str, name: Optional[str], desc: Optional[str], tags: Optional[st
         base_update_data['priority'] = priority
     if status is not None:
         base_update_data['status'] = status
+    if progress is not None:
+        base_update_data['progress'] = progress
     
     for task_id in task_ids:
         try:
