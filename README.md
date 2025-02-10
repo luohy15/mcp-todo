@@ -7,7 +7,7 @@ A command-line todo application with MCP server capabilities for LLM integration
 - Command-line interface for managing tasks
 - Rich filtering and sorting options
 - Support for tags, priorities, and due dates
-- MCP server integration for LLM-based task managemen
+- MCP server integration for LLM-based task management
 - JSONL-based storage for easy data manipulation
 
 ## Installation
@@ -69,4 +69,4 @@ data_file = "~/.local/share/todo/tasks.jsonl"
 
 ## License
 
-MI
+MIT

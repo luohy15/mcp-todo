@@ -6,11 +6,11 @@ TaskStatus = Literal["active", "completed", "archived", "all", "none"]
 
 # Task model and related schemas
 class Task(BaseModel):
-    id: in
+    id: int
     name: str
     desc: str | None = None
     tags: list[str] | None = None
-    due_date: str | None = None  # YYYY-MM-DD forma
+    due_date: str | None = None  # YYYY-MM-DD format
     priority: TaskPriority | None = None
     status: TaskStatus | None = None
     progress: str | None = None
@@ -27,7 +27,7 @@ class CreateTask(BaseModel):
     progress: str | None = None
 
 class UpdateTask(BaseModel):
-    id: in
+    id: int
     name: str | None = None
     desc: str | None = None
     tags: list[str] | None = None
@@ -37,10 +37,10 @@ class UpdateTask(BaseModel):
     progress: str | None = None
 
 class DeleteTask(BaseModel):
-    id: in
+    id: int
 
 class GetTask(BaseModel):
-    id: in
+    id: int
 
 class ListTasks(BaseModel):
     keyword: str | None = None

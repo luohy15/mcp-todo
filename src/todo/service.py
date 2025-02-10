@@ -65,7 +65,7 @@ def update_task(data: UpdateTask) -> Task:
     task = next((t for t in tasks if t.id == data.id), None)
     if not task:
         raise ValueError(f"Task with ID {data.id} not found")
-
+    
     # Update fields if provided
     if data.name is not None:
         task.name = data.name
@@ -84,7 +84,7 @@ def update_task(data: UpdateTask) -> Task:
             task.completed_at = timestamp_iso8601()
     if data.progress is not None:
         task.progress = data.progress
-
+    
     save_tasks(tasks)
     return task
 
@@ -100,7 +100,7 @@ def delete_task(task_id: int) -> bool:
 def list_tasks(filters: ListTasks) -> list[Task]:
     """List tasks with optional filters"""
     tasks = load_tasks()
-
+    
     # Apply basic filters
     status = filters.status or "active"  # Default to active if not specified
     if status != "all":  # Skip status filtering if "all" is specified
@@ -117,12 +117,12 @@ def list_tasks(filters: ListTasks) -> list[Task]:
             keyword in t.name.lower() or
             (t.desc and keyword in t.desc.lower())
         )]
-
+    
     # Apply range filter
     if filters.range:
         today = datetime.now().date()
         tasks = [t for t in tasks if t.due_date]  # Filter out tasks without due date
-
+        
         match filters.range:
             case "today":
                 # Tasks due today
@@ -171,7 +171,7 @@ def list_tasks(filters: ListTasks) -> list[Task]:
                 year_end = today.replace(month=12, day=31)
                 year_start = quarter_end + timedelta(days=1)  # Start after this quarter
                 tasks = [t for t in tasks if year_start <= datetime.strptime(t.due_date, "%Y-%m-%d").date() <= year_end]
-
+    
     # Sort tasks based on orderby parameter
     match filters.orderby:
         case "due-date":
@@ -200,4 +200,4 @@ def list_tasks(filters: ListTasks) -> list[Task]:
             )
 
     limit = filters.limit or 10  # Default to 10 tasks
-    return tasks[:limit]  # Apply task limi
+    return tasks[:limit]  # Apply task limit
