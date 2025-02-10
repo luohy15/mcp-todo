@@ -1,9 +1,38 @@
 import sys
+import shutil
 from datetime import datetime, timedelta
 from typing import Any, Optional, Sequence
 
 import click
 from tabulate import tabulate
+
+def get_column_widths(total_width: int) -> list[int]:
+    """Calculate column widths based on terminal width and content ratios"""
+    # Reserve some space for table borders and padding
+    available_width = max(total_width - 20, 80)  # minimum 80 chars, account for borders
+    
+    # Define column ratios (total 100)
+    ratios = {
+        'id': 5,        # ID column (smallest)
+        'name': 20,     # Name (largest)
+        'desc': 15,     # Description
+        'status': 10,   # Status
+        'progress': 10, # Progress
+        'due': 10,      # Due date
+        'priority': 5,  # Priority
+        'tags': 5,      # Tags
+        'created': 10,  # Created date
+        'completed': 10 # Completed date
+    }
+    
+    # Calculate width for each column
+    widths = []
+    for ratio in ratios.values():
+        # Calculate width and ensure minimum of 3 characters
+        width = max(int((ratio / 100) * available_width), 3)
+        widths.append(width)
+    
+    return widths
 
 from .service import (
     create_task,
@@ -49,11 +78,17 @@ def format_tasks_table(tasks: Sequence[dict[str, Any]]) -> str:
     headers = ['ID', 'Name', 'Description', 'Status', 'Progress', 'Due Date', 'Priority', 'Tags', 'Created', 'Completed']
     rows = [format_task_for_table(task) for task in tasks]
     
+    # Get terminal width
+    terminal_width = shutil.get_terminal_size().columns
+    
+    # Calculate dynamic column widths
+    column_widths = get_column_widths(terminal_width)
+    
     return tabulate(
         rows,
         headers=headers,
         tablefmt='simple',
-        maxcolwidths=[6, 20, 30, 15, 15, 15, 15, 10, 15, 15],
+        maxcolwidths=column_widths,
         numalign='left',
         stralign='left'
     )
