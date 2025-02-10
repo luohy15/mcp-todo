@@ -48,8 +48,18 @@ from .model import (
     ListTasks
 )
 
+def truncate_text(text: str, max_length: int) -> str:
+    """Truncate text to max_length with ellipsis if needed"""
+    if not text or len(text) <= max_length:
+        return text
+    return text[:max_length-3] + '...'
+
 def format_task_for_table(task: dict[str, Any]) -> list[Any]:
     """Format task data for tabulate table row"""
+    # Get terminal width and calculate column widths
+    terminal_width = shutil.get_terminal_size().columns
+    widths = get_column_widths(terminal_width)
+    
     # Format dates
     created_at = datetime.fromisoformat(task['created_at']).strftime('%Y-%m-%d %H:%M') if task.get('created_at') else ''
     completed_at = datetime.fromisoformat(task['completed_at']).strftime('%Y-%m-%d %H:%M') if task.get('completed_at') else ''
@@ -57,17 +67,18 @@ def format_task_for_table(task: dict[str, Any]) -> list[Any]:
     # Format tags
     tags = ', '.join(task.get('tags', [])) if task.get('tags') else ''
     
+    # Return formatted data with truncation where appropriate
     return [
-        task['id'],
-        task['name'],
-        task.get('desc') or '',
-        task['status'],
-        task.get('progress') or '',
-        task.get('due_date') or '',
-        task.get('priority') or '',
-        tags,
-        created_at,
-        completed_at
+        task['id'],  # ID is numeric, no truncation needed
+        truncate_text(task['name'], widths[1]),
+        truncate_text(task.get('desc') or '', widths[2]),
+        task['status'],  # Status is enum, no truncation needed
+        truncate_text(task.get('progress') or '', widths[4]),
+        task.get('due_date') or '',  # Date format is fixed, no truncation needed
+        task.get('priority') or '',  # Priority is enum, no truncation needed
+        truncate_text(tags, widths[7]),
+        created_at,  # Date format is fixed, no truncation needed
+        completed_at  # Date format is fixed, no truncation needed
     ]
 
 def format_tasks_table(tasks: Sequence[dict[str, Any]]) -> str:
