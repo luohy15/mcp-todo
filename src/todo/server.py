@@ -132,7 +132,7 @@ async def serve() -> None:
     options = server.create_initialization_options()
     # Ensure UTF-8 encoding on Windows
     if platform.system() == "Windows":
-        import msvcrt
+        import msvcr
         import os
         msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
         msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)

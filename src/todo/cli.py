@@ -1,9 +1,38 @@
 import sys
+import shutil
 from datetime import datetime, timedelta
 from typing import Any, Optional, Sequence
 
 import click
 from tabulate import tabulate
+
+def get_column_widths(total_width: int) -> list[int]:
+    """Calculate column widths based on terminal width and content ratios"""
+    # Reserve some space for table borders and padding
+    available_width = max(total_width - 20, 80)  # minimum 80 chars, account for borders
+
+    # Define column ratios (total 100)
+    ratios = {
+        'id': 5,        # ID column (smallest)
+        'name': 20,     # Name (largest)
+        'desc': 15,     # Description
+        'status': 10,   # Status
+        'progress': 10, # Progress
+        'due': 10,      # Due date
+        'priority': 5,  # Priority
+        'tags': 5,      # Tags
+        'created': 10,  # Created date
+        'completed': 10 # Completed date
+    }
+
+    # Calculate width for each column
+    widths = []
+    for ratio in ratios.values():
+        # Calculate width and ensure minimum of 3 characters
+        width = max(int((ratio / 100) * available_width), 3)
+        widths.append(width)
+
+    return widths
 
 from .service import (
     create_task,
@@ -24,10 +53,10 @@ def format_task_for_table(task: dict[str, Any]) -> list[Any]:
     # Format dates
     created_at = datetime.fromisoformat(task['created_at']).strftime('%Y-%m-%d %H:%M') if task.get('created_at') else ''
     completed_at = datetime.fromisoformat(task['completed_at']).strftime('%Y-%m-%d %H:%M') if task.get('completed_at') else ''
-    
+
     # Format tags
     tags = ', '.join(task.get('tags', [])) if task.get('tags') else ''
-    
+
     return [
         task['id'],
         task['name'],
@@ -38,22 +67,28 @@ def format_task_for_table(task: dict[str, Any]) -> list[Any]:
         task.get('priority') or '',
         tags,
         created_at,
-        completed_at
+        completed_a
     ]
 
 def format_tasks_table(tasks: Sequence[dict[str, Any]]) -> str:
     """Format multiple tasks as a table using tabulate"""
     if not tasks:
         return "No tasks found"
-    
+
     headers = ['ID', 'Name', 'Description', 'Status', 'Progress', 'Due Date', 'Priority', 'Tags', 'Created', 'Completed']
     rows = [format_task_for_table(task) for task in tasks]
-    
+
+    # Get terminal width
+    terminal_width = shutil.get_terminal_size().columns
+
+    # Calculate dynamic column widths
+    column_widths = get_column_widths(terminal_width)
+
     return tabulate(
         rows,
         headers=headers,
         tablefmt='simple',
-        maxcolwidths=[6, 20, 30, 15, 15, 15, 15, 10, 15, 15],
+        maxcolwidths=column_widths,
         numalign='left',
         stralign='left'
     )
@@ -97,10 +132,10 @@ def parse_due_date(due: str | None) -> str | None:
     """Parse due date string, supporting both YYYY-MM-DD format and shortcuts"""
     if not due:
         return None
-        
+
     due = due.lower()
     today = datetime.now()
-    
+
     match due:
         case 'today':
             return today.strftime('%Y-%m-%d')
@@ -124,9 +159,9 @@ def parse_due_date(due: str | None) -> str | None:
             # End of current year
             return get_end_of_year(today).strftime('%Y-%m-%d')
         case _:
-            # Assume it's in YYYY-MM-DD format
+            # Assume it's in YYYY-MM-DD forma
             try:
-                # Validate the date format
+                # Validate the date forma
                 datetime.strptime(due, '%Y-%m-%d')
                 return due
             except ValueError:
@@ -167,23 +202,23 @@ def get(ids: str):
     task_ids = parse_task_ids(ids)
     successes = []
     failures = []
-    
+
     for task_id in task_ids:
         task = get_task(task_id)
         if task:
             successes.append(task)
         else:
             failures.append((task_id, "Task not found"))
-    
+
     if successes:
         click.echo(f"Found {len(successes)} task(s):\n")
         click.echo(format_tasks_table([task.model_dump() for task in successes]))
-    
+
     if failures:
         click.echo("\nFailed to get the following tasks:", err=True)
         for task_id, error in failures:
             click.echo(f"Task {task_id}: {error}", err=True)
-        
+
     if failures and not successes:
         sys.exit(1)
 
@@ -196,13 +231,13 @@ def get(ids: str):
 @click.option('-p', '--priority', type=click.Choice(['low', 'medium', 'high']), help='New task priority')
 @click.option('-s', '--status', type=click.Choice(['active', 'completed', 'archived']), help='New task status')
 @click.option('-g', '--progress', help='New task progress')
-def update(ids: str, name: Optional[str], desc: Optional[str], tags: Optional[str], 
+def update(ids: str, name: Optional[str], desc: Optional[str], tags: Optional[str],
           due: Optional[str], priority: Optional[str], status: Optional[str], progress: Optional[str]):
     """Update one or more tasks (comma-separated IDs)"""
     task_ids = parse_task_ids(ids)
     successes = []
     failures = []
-    
+
     base_update_data = {}
     # Only include provided fields
     if name is not None:
@@ -219,7 +254,7 @@ def update(ids: str, name: Optional[str], desc: Optional[str], tags: Optional[st
         base_update_data['status'] = status
     if progress is not None:
         base_update_data['progress'] = progress
-    
+
     for task_id in task_ids:
         try:
             update_data = {'id': task_id, **base_update_data}
@@ -227,17 +262,17 @@ def update(ids: str, name: Optional[str], desc: Optional[str], tags: Optional[st
             successes.append(task)
         except ValueError as e:
             failures.append((task_id, str(e)))
-    
+
     # Print results
     if successes:
         click.echo(f"Successfully updated {len(successes)} task(s):")
         click.echo(format_tasks_table([task.model_dump() for task in successes]))
-    
+
     if failures:
         click.echo("\nFailed to update the following tasks:", err=True)
         for task_id, error in failures:
             click.echo(f"Task {task_id}: {error}", err=True)
-        
+
     if failures and not successes:
         sys.exit(1)
 
@@ -248,23 +283,23 @@ def finish(ids: str):
     task_ids = parse_task_ids(ids)
     successes = []
     failures = []
-    
+
     for task_id in task_ids:
         try:
             task = update_task(UpdateTask(id=task_id, status='completed'))
             successes.append(task)
         except ValueError as e:
             failures.append((task_id, str(e)))
-    
+
     if successes:
         click.echo(f"Successfully completed {len(successes)} task(s):")
         click.echo(format_tasks_table([task.model_dump() for task in successes]))
-    
+
     if failures:
         click.echo("\nFailed to complete the following tasks:", err=True)
         for task_id, error in failures:
             click.echo(f"Task {task_id}: {error}", err=True)
-        
+
     if failures and not successes:
         sys.exit(1)
 
@@ -275,21 +310,21 @@ def delete(ids: str):
     task_ids = parse_task_ids(ids)
     successes = []
     failures = []
-    
+
     for task_id in task_ids:
         if delete_task(task_id):
             successes.append(task_id)
         else:
             failures.append((task_id, "Task not found"))
-    
+
     if successes:
         click.echo(f"Successfully deleted {len(successes)} task(s): {', '.join(map(str, successes))}")
-    
+
     if failures:
         click.echo("\nFailed to delete the following tasks:", err=True)
         for task_id, error in failures:
             click.echo(f"Task {task_id}: {error}", err=True)
-        
+
     if failures and not successes:
         sys.exit(1)
 
@@ -298,14 +333,14 @@ def delete(ids: str):
 @click.option('-t', '--tags', help='Filter by comma-separated tags')
 @click.option('-p', '--priority', type=click.Choice(['low', 'medium', 'high']), help='Filter by priority')
 @click.option('-s', '--status', type=click.Choice(['all', 'active', 'completed', 'archived']), help='Filter by status (default: active)')
-@click.option('-r', '--range', type=click.Choice(['all', 'today', 'tomorrow', 'day', 'week', 'month', 'quarter', 'year']), 
+@click.option('-r', '--range', type=click.Choice(['all', 'today', 'tomorrow', 'day', 'week', 'month', 'quarter', 'year']),
           help='Filter by due date range (today=due today/tomorrow=due tomorrow/week=due after today until Sunday/'
                'month=due after this week until month end/quarter=due after this month until quarter end/'
                'year=due after this quarter until year end)')
 @click.option('-o', '--orderby', type=click.Choice(['due-date', 'priority', 'id', 'created-at']), default='due-date', help='Sort tasks by field')
 @click.option('-d', '--order', type=click.Choice(['asc', 'desc']), default='asc', help='Sort order (ascending/descending)')
 @click.option('-l', '--limit', type=int, help='Maximum number of tasks to display (default: 10)')
-def list(keyword: Optional[str], tags: Optional[str], priority: Optional[str], 
+def list(keyword: Optional[str], tags: Optional[str], priority: Optional[str],
          status: Optional[str], range: Optional[str], orderby: str, order: str, limit: Optional[int]):
     """List tasks with optional filters"""
     tasks = list_tasks(ListTasks(
@@ -316,9 +351,9 @@ def list(keyword: Optional[str], tags: Optional[str], priority: Optional[str],
         range=range,
         orderby=orderby,
         order=order,
-        limit=limit
+        limit=limi
     ))
-    
+
     if tasks:
         click.echo(f"Found {len(tasks)} tasks:\n")
         click.echo(format_tasks_table([task.model_dump() for task in tasks]))
